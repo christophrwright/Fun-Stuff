@@ -1,14 +1,36 @@
-/*
- * Contains Generalized Monster Stats by Role
- * from the Business Card DM Guide
+/** 
+ * Christopher Wright
+ * Mar 18, 2014
+ *
+ * Monster Generalizations and attackClass modifications
+ * taken from the Business Card DM Guide: http://blogofholding.com/?p=512
+ *
+ *
+ * To Implement:
+ * 	likes = array
+ * 	languages = array // import list of names
+ * 	current affiliations, religion
+ * 	distToPlayers: given an [array of player locations], 
+ * 	generate values for each= 0,1,2,3,4 
+ * 	for (i=0; i <= numPlayers; i++){} 
+ * 	items.java
  * 
- * Lists to read: 
- * randomEffect 
- * nameList
- * monsterKind 
- * alignment
- * 
- * */ 
+ * Functions To Add :
+ * 	give(item, amount): player.items(item) -= amount, monster.bribe(item, amount)
+ * 	bribe(item, amount): if (player.give(gold, amount) && (monster.canBribe == (1,2)){ 
+			if (monster.canBribe == 1){ bribed = 1, gold += player.give(gold, amount), disposition_To_Player += 1 }
+			if (monster.canBribe == 2){ bribed = 1, gold += player.give(gold, amount), disposition_To_Player -= 1 , monster.attack(player)}
+			}
+		else{disposition_To_Player -= 1 , monster.attack;}
+
+ * // certain monsters will surrender if they are almost dead 
+ * surrender():  if will_run && ( 0 <= hp <= math.ceil(hp * .05))
+
+ * // gives a 15 % chance of demanding surrender if the player is weaker than a monster, or if a player is almost dead
+ * demandSurrender(): if (((player.hpMax < monster.hp) || (player.hp < math.ceil(player.hp * .1))) && (random.randInt(100) > 85)), System.out.println(monster.name + " demands your surrender!"); 
+
+ *-======---Program Starts---======-*/
+
 package Monster;
 
 import java.io.BufferedReader;
@@ -16,33 +38,148 @@ import java.util.*;
 
 abstract class Monster{// implements Comparable<Monster> {
    // private static BufferedReader read;
-    private static Random randomGenerator;
+    private static Random random;
 
     public static String name = "Name";
-    public static String size = "Medium";
-    public static String monsterKind;
-    public static String alignment = "Neutral";
-	
-	public static List<String> Languages = new ArrayList<String>();
-	public static List<String> Skills;
-	public static List<attack> attackList;
-	
-	public static int STR, DEX, CON, INT, WIS, CHA = 11;
-	public static int level = 1;
+   	public static int level = 1;
+    public static int hp = 23; // hit points
+	public static int ac = 14; // Armor class
+	public static int attackClass = random.nextInt(7); // [artillery, brute, Controller, lurker, skirmisher, soldier, solo]
+    
 	public static int initiative = 0;
-	public static int health = 25;
-	public static int armorClass = 14;
-	public static int fortitude, reflex, will = 12;
+	public static int[] stats = {11, 11, 11, 11, 11, 11}; //  STR, DEX, CON, INT, WIS, CHA 
+	public static int[] saves = {12, 12, 12}; //  fortitude, reflex, will = 12;
 	public static int baseAttack = 5;
-	public static int averageDamage = 8;
-	public static int speed = 5;
+	public static int damage = 8;
+
+	public static int size = random.nextInt(4); // 0 = small, 1 = mid, 2 = large, 3 = huge
+	public static int speed = random.nextInt(3); // .5, 1, 2 // slow, normal, fast
+	public static int rank = random.nextInt(3); // (minion = .5, normal = 1, elite = 2)
 	
-	public static boolean Leader, Minion = false;
+	public static Boolean will_run = false;
+	public static int dist_to_player = random.nextInt(5); // 0 = Near, 1 = mid, 2 = far, 3 = out of range 
+    
+			// On a scale of 0 = hates, 3 = neutral, 5 = loves the player
+	// Will influence ability to hurt player later
+	public static int dispostion_player = 0; // random.randInt(5);
+	// The monster's alignment is currently irrelevant 
+	// public static String alignment = "Neutral";
+
+	// Currently shows what the monster was doing when the player showed up
+	// Will be changed to denote how monster is currently
+	// interacting with the player (trading with or training the player)
+	// 0 - talking, attack penalty round one; 
+	// 1 - combat ready, no penalty
+	public static int status = random.nextInt(2) ;
+
 
 	//FUNCTIONS
 	
-	public Monster(String n){	name = n; }
+	// initializes Monsters
+	public Monster(String n){	
+		name = n; 
+		switch (attackClass){
+			case 0:	// Artillery
+					hp = 21 + (6 * (level-1));
+					ac = 12 + (level-1);
+
+			case 1: // Brute
+					hp = 26 + (6 * (level-1));
+					ac = 12 + (level-1);
+					damage = damage + (5 * (8 + (level-1)))/4;
+
+			case 2: // Controller
+					hp = 24 + (8 * (level-1));
+
+			case 3: // Lurker
+					hp = 21 + (6 * (level-1));
+
+			case 4: // Skirmisher
+					hp = 24 + (8 * (level-1));
+
+			case 5: // Soldier
+					hp = 24 + (8 * (level-1));
+					ac = 12 + (level-1);
+
+			case 6: // Solo
+					hp = 4*(24 + (8 * (level-1)));
+			break;
+			}
+
+		switch (rank){
+			case 0: // Minion
+					hp = hp / 2;
+
+			case 1: // Normal
+					hp = hp;
+			case 2: // Elite
+					hp = hp * 2;
+					ac = ac + 3;
+					damage = (damage *3)/2; 
+			break;
+			}
+		}	
+
+	// Things Monsters Can Do
+/*
+	public int attack(monster Player){ // } if dist_to_player = 0,1, use weapon1, else use weapon2
+		int attack = baseAtk + random.nextInt(21); 
+		if (attack > Player.ac){
+			int damage = item.weapon.damage;
+		return damage;
+		}
+*/
+	public void runAway(){ // : if will_run && (15% <= hp <= 30%), every round add <Speed> to dist_to_player
+		dist_to_player = dist_to_player + 1;
+		}	
+
+	public Boolean makeSave(int save, int requiredSave){ // : if player attacks with something that reqs a save, roll to make save; if save < playerAtk, don't make save
+		int roll = random.nextInt(21);
+		if ((roll + saves[save]) >= requiredSave){
+			return true;
+			}
+		return false;
+		}
+
+
+
+	// Included in case the user wants to manually 
+	// set the monster's stats for whatever reason
+
+	public void levels(int L){ 
+		level = L; 
+	}
 	
+	public void setSaves(int fort, int ref, int will){ 
+		saves[0] = ref;
+		saves[1] = fort;
+		saves[2] = will; 
+	}
+	
+	public void setInitiative(int init){ 
+		initiative = init; 
+	}
+	
+	/*
+	public void setData(String s, String k, String al){ 
+		size = s;
+		monsterKind = k;
+		alignment = al;
+	}
+	*/
+	
+	public void setStats(int str, int dex, int con, int smarts, int wis, int cha){
+		stats[0] = str; 
+		stats[1] = dex;
+		stats[2] = con;
+		stats[3] = smarts;
+		stats[4] = wis;
+		stats[5] = cha;
+	}
+
+	// These are refer to functionality that will be added later
+	/*
+
 	public void canSpeak(List<String> langs){
 		Languages.add("Common");
 		for (int i = 0; i<langs.size(); i++) Languages.add(langs.get(i));
@@ -55,118 +192,15 @@ abstract class Monster{// implements Comparable<Monster> {
 	public void nameMonster(String n){ 
 		name = n; 
 	}
-	
-	public void levels(int L){ 
-		level = L; 
-	}
-	
-	public void saves(int fort, int ref, int w){ 
-		reflex = ref;
-		fortitude = fort;
-		will = w; 
-	}
-	
-	public void motivate(int init){ 
-		initiative = init; 
-	}
-	
-	public void setData(String s, String k, String al){ 
-		size = s;
-		monsterKind = k;
-		alignment = al;
-	}
-	
-	public void setStats(int str, int dex, int con, int smarts, int wis, int cha){
-	STR = str;
-	DEX = dex;
-	CON = con;
-	INT = smarts;
-	WIS = wis;
-	CHA = cha;
+	*/
+
 }
 	
 	//end Functions
 	
-	public static class attack{
-		
-		public List<String> randomEffect;
-		
-		public static List<attack> attackList;
-
-		public int range = 1;
-		public int damage = 8;
-
-		public boolean charged = true;
-		public boolean encounterPower = false;
-		public boolean dailyPower = false;
-
-		public String name;
-		public String action;
-		public String save = "Fortitude";
-		public String typeofDamage = "Physical";
-		public String effect = "None";
-		public String flavorText = "The attack connects!";
-		
-    	int x = randomGenerator.nextInt(randomEffect.size());
-
-    	public attack(String n){ name = n; }
-		
-		public attack(String n, int dist, String type, String s){
-			name = n;
-			range = dist;
-			damage = 5 + (randomGenerator.nextInt(5));
-			typeofDamage = type;
-			save = s;
-		}
-		
-		public static List<attack> allMoves(List<String> names){	
-			List<attack> attackList = new ArrayList<attack>();
-			String[] types = {"Acid", "Bludgeoning", "Butts", "Cold", "Divine", "Electric", "Ex-Sangunated", "Falling", "Fire", "Force", "Gas Attack", "Hadoken", "Infernal", "Laughing", "Lemming", "Pasta", "Physical", "Piercing", "Poison", "Psychic", "Ninja", "Non-Lethal", "Really Weird", "Runny Nose", "Sanity", "Slashing", "Sonic", "Stinky", "Tentacle", "Wandering Emu"};
-			String[] saves = {"Fortitude", "Will", "Reflex", "Strength", "Dexterity", "Constitution", "Inteligence", "Wisdom", "Charisma", "Luck", ""};
-			for (int i=0; i < names.size();i++){
-				attackList.add(new attack(names.get(i), randomGenerator.nextInt(10), types[randomGenerator.nextInt(types.length)], saves[randomGenerator.nextInt(saves.length)]));
-			}
-			return attackList;
-		}
-	}
+	
 
 
-	
-	abstract class Controller extends Monster{
-		public int health = 24 + (8 * (level-1));
-		
-	}
-	
-	public class Lurker extends Monster{
-		public int health = 21 + (6 * (level-1));
-	}
-	
-	public class Skirmisher extends Monster{
-		public int health = 24 + (8 * (level-1));
-	}
-	
-	public class Elite extends Monster{
-		public int health = 2*(24 + (8 * (level-1)));
-	}
-	
-	public class Artillery extends Monster{		
-		public int health = 21 + (6 * (level-1));
-		public int armorclass = 12 + (level-1);
-	}
-	
-	public class Brute extends Monster{		
-		public int health = 26 + (6 * (level-1));
-		public int armorclass = 12 + (level-1);
-		public double moreDamage = Math.ceil(1.25 * (8 + (level-1)));
-		public int averageDamage = (int) moreDamage;
-		}
-	
-	public class Soldier extends Monster{
-		public int health = 24 + (8 * (level-1));
-		public int armorclass = 12 + (level-1);
-	}
 
-	public class Solo extends Monster{
-		public int health = 4*(24 + (8 * (level-1)));
-	}
-}
+
+
